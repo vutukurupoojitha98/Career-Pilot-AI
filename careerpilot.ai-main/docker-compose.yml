@@ -1,0 +1,45 @@
+version: '3.9'
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: careerpilot-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ping:1})"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: careerpilot-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      MONGO_URL: mongodb://mongo:27017
+      DB_NAME: careerpilot_ai
+      NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
+      CORS_ORIGINS: '*'
+      EMERGENT_LLM_KEY: ${EMERGENT_LLM_KEY}
+      INTEGRATION_PROXY_URL: ${INTEGRATION_PROXY_URL:-https://integrations.emergentagent.com}
+      JWT_SECRET: ${JWT_SECRET:-please-change-in-production}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@careerpilot.ai}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:3000/api/integrations/gmail/callback}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
+      MICROSOFT_REDIRECT_URI: ${MICROSOFT_REDIRECT_URI:-http://localhost:3000/api/integrations/microsoft/callback}
+
+volumes:
+  mongo-data:
